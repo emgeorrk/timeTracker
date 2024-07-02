@@ -1,7 +1,9 @@
 package external
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"io"
 	"log"
 	"net/http"
 	"timeTracker/app"
@@ -36,12 +38,44 @@ func RunExternalApiEmulation(myApp *app.App) {
 			return
 		}
 		
+		// Делаем запрос к randomdatatools для генерации случайных данных
+		// Лимит - 1 запрос в секунду
+		url := "https://api.randomdatatools.ru/?count=1&typeName=classic&params=LastName,FirstName,FatherName,Address"
+		
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Printf("Error while executing GET request on https://api.randomdatatools.ru: %v\n", err)
+			return
+		}
+		defer resp.Body.Close()
+		
+		// Читаем тело ответа
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("Error while reading response body: %v\n", err)
+			return
+		}
+		
+		// Декодируем JSON
+		person := struct {
+			LastName   string `json:"LastName"`
+			FirstName  string `json:"FirstName"`
+			FatherName string `json:"FatherName"`
+			Address    string `json:"Address"`
+		}{}
+		
+		err = json.Unmarshal([]byte(string(body)), &person)
+		if err != nil {
+			log.Printf("Error while decoding JSON: %v\n", err)
+			return
+		}
+		
 		// Возвращаем успешный ответ с данными
 		c.JSON(http.StatusOK, gin.H{
-			"surname":    "Иванов",
-			"name":       "Иван",
-			"patronymic": "Иванович",
-			"address":    "г. Москва, ул. Ленина, д. 5, кв. 1",
+			"surname":    person.LastName,
+			"name":       person.FirstName,
+			"patronymic": person.FatherName,
+			"address":    person.Address,
 		})
 	})
 	
