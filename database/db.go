@@ -9,17 +9,16 @@ import (
 	"timeTracker/models"
 )
 
-var DB *gorm.DB
-
-func InitDB() {
-	var err error
+func InitDB() *gorm.DB {
 	dbURL := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		config.GetEnv("DB_HOST"), config.GetEnv("DB_USER"), config.GetEnv("DB_PASSWORD"), config.GetEnv("DB_NAME"), config.GetEnv("DB_PORT"))
 	
-	DB, err = gorm.Open("postgres", dbURL)
+	DB, err := gorm.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalln("Failed to connect to database:", err)
 	}
 	
 	DB.AutoMigrate(&models.User{}, &models.Task{})
+	
+	return DB
 }

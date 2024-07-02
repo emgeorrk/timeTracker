@@ -4,9 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"timeTracker/app"
 )
 
-func RunExternalApiEmulation() {
+func RunExternalApiEmulation(myApp *app.App) {
+	defer myApp.WaitGroup.Done()
+	
 	r := gin.Default()
 	
 	r.GET("/info", func(c *gin.Context) {
@@ -20,10 +23,16 @@ func RunExternalApiEmulation() {
 			return
 		}
 		
-		// Проверка на корректность серии и номера паспорта (можно добавить свои правила проверки)
-		if len(passportSerie) != 4 || len(passportNumber) != 6 {
-			log.Println("invalid passportSerie or passportNumber format")
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid passportSerie or passportNumber format"})
+		// Проверка на корректность серии и номера паспорта
+		if len(passportSerie) != 4 {
+			log.Println("invalid passportSerie format")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid passportSerie format"})
+			return
+		}
+		
+		if len(passportNumber) != 6 {
+			log.Println("invalid passportNumber format")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid passportNumber format"})
 			return
 		}
 		
@@ -38,7 +47,7 @@ func RunExternalApiEmulation() {
 	
 	// Запуск сервера на порту 8088
 	if err := r.Run(":8088"); err != nil {
-		log.Fatalln("Failed to start external API emulation:", err)
+		log.Println("Failed to start external API emulation:", err)
 	}
 	log.Println("External API emulation started on http://localhost:8088")
 }

@@ -2,33 +2,36 @@
 // @version 1.0
 // @description Time tracking application.
 // @host localhost:8084
-// @BasePath /
+// @BasePath /api/v1/
 
 package main
 
 import (
-	"github.com/jinzhu/gorm"
 	"log"
+	"timeTracker/app"
 	"timeTracker/config"
-	"timeTracker/database"
+	"timeTracker/external"
 	"timeTracker/routes"
 )
 
 func main() {
 	config.LoadConfig()
 	
-	database.InitDB()
-	defer func(DB *gorm.DB) {
-		err := DB.Close()
+	myApp := app.NewApp()
+	
+	defer func(myApp *app.App) {
+		err := myApp.DB.Close()
 		if err != nil {
 			log.Fatalln("Failed to close database connection:", err)
 		}
-	}(database.DB)
+	}(myApp)
 	
-	r := routes.InitRouter()
+	myApp.WaitGroup.Add(1)
+	go external.RunExternalApiEmulation(myApp)
+	myApp.WaitGroup.Wait()
 	
-	err := r.Run("localhost:8084")
-	if err != nil {
+	r := routes.InitRouter(myApp)
+	if err := r.Run(":8084"); err != nil {
 		log.Fatalln("Failed to start server:", err)
 	}
 	
