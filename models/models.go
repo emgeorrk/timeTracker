@@ -26,6 +26,7 @@ type Task struct {
 }
 
 type Period struct {
+	gorm.Model
 	StartTime time.Time `json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
 }
