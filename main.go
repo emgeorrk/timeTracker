@@ -31,9 +31,9 @@ func main() {
 	myApp.WaitGroup.Wait()
 	
 	r := routes.InitRouter(myApp)
+	
+	log.Println("Server started on http://localhost:8084")
 	if err := r.Run(":8084"); err != nil {
 		log.Fatalln("Failed to start server:", err)
 	}
-	
-	log.Println("Server started on http://localhost:8084")
 }

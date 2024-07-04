@@ -10,8 +10,6 @@ import (
 )
 
 func RunExternalApiEmulation(myApp *app.App) {
-	defer myApp.WaitGroup.Done()
-	
 	r := gin.Default()
 	
 	r.GET("/info", func(c *gin.Context) {
@@ -49,14 +47,6 @@ func RunExternalApiEmulation(myApp *app.App) {
 		}
 		defer resp.Body.Close()
 		
-		// Читаем тело ответа
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("Error while reading response body: %v\n", err)
-			return
-		}
-		
-		// Декодируем JSON
 		person := struct {
 			LastName   string `json:"LastName"`
 			FirstName  string `json:"FirstName"`
@@ -64,10 +54,20 @@ func RunExternalApiEmulation(myApp *app.App) {
 			Address    string `json:"Address"`
 		}{}
 		
-		err = json.Unmarshal([]byte(string(body)), &person)
-		if err != nil {
-			log.Printf("Error while decoding JSON: %v\n", err)
-			return
+		if resp.StatusCode == http.StatusOK {
+			// Читаем тело ответа
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				log.Printf("Error while reading response body: %v\n", err)
+				return
+			}
+			
+			// Декодируем JSON
+			err = json.Unmarshal([]byte(string(body)), &person)
+			if err != nil {
+				log.Printf("Error while decoding JSON: %v\n", err)
+				return
+			}
 		}
 		
 		// Возвращаем успешный ответ с данными
@@ -79,9 +79,11 @@ func RunExternalApiEmulation(myApp *app.App) {
 		})
 	})
 	
+	myApp.WaitGroup.Done()
+	log.Println("External API emulation started on http://localhost:8088")
+	
 	// Запуск сервера на порту 8088
 	if err := r.Run(":8088"); err != nil {
 		log.Println("Failed to start external API emulation:", err)
 	}
-	log.Println("External API emulation started on http://localhost:8088")
 }
