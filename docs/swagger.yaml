@@ -1,0 +1,293 @@
+basePath: /api/v1/
+definitions:
+  gin.H:
+    additionalProperties: {}
+    type: object
+  handlers.PassportRequest:
+    properties:
+      passportNumber:
+        type: string
+    type: object
+  handlers.overviewResult:
+    properties:
+      end_time:
+        type: string
+      start_time:
+        type: string
+      tasks:
+        items:
+          properties:
+            task:
+              $ref: '#/definitions/models.Task'
+            time_spent_in_period:
+              type: string
+          type: object
+        type: array
+    type: object
+  models.Period:
+    properties:
+      end_time:
+        type: string
+      id:
+        type: integer
+      start_time:
+        type: string
+      task_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  models.Task:
+    properties:
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      overall_time:
+        $ref: '#/definitions/time.Duration'
+      periods:
+        items:
+          $ref: '#/definitions/models.Period'
+        type: array
+      user_id:
+        type: integer
+    type: object
+  models.User:
+    properties:
+      address:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      passport_number:
+        type: string
+      passport_series:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+    type: object
+  time.Duration:
+    enum:
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
+    type: integer
+    x-enum-varnames:
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
+host: localhost:8084
+info:
+  contact: {}
+  description: Time tracking application.
+  title: Time Tracker API
+  version: "1.0"
+paths:
+  /users:
+    get:
+      description: Возвращает список всех пользователей
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: GetUsers
+    post:
+      consumes:
+      - application/json
+      description: Создает пользователя
+      parameters:
+      - description: Номер паспорта
+        in: body
+        name: passportNumber
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PassportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: CreateUser
+  /users/{id}:
+    delete:
+      description: Удаляет пользователя и все связанные с ними записи
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gin.H'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: DeleteUser
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о пользователе
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: UpdateUser
+  /users/{id}/tasks:
+    post:
+      consumes:
+      - application/json
+      description: Создает задачу для пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: CreateTask
+  /users/{id}/tasks/{task_id}/start:
+    post:
+      description: Начинает отсчет для задачи пользователя, создает задачу, если ее
+        не существует
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: StartTaskTimer
+  /users/{id}/tasks/{task_id}/stop:
+    post:
+      description: Заканчивает отсчет для задачи пользователя
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: StopTaskTimer
+  /users/{id}/tasks_overview:
+    get:
+      description: Возвращает трудозатраты по пользователю
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.overviewResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: GetTasksOverview
+swagger: "2.0"

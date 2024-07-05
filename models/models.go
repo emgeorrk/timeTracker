@@ -21,12 +21,13 @@ type Task struct {
 	Name             string        `json:"name"`
 	IsActive         bool          `json:"is_active"`
 	Periods          []Period      `gorm:"foreignKey:ID;References:ID,TaskID" json:"periods"`
-	OverallTimeSpent time.Duration `json:"overall_time"`
+	OverallTimeSpent time.Duration `json:"overall_time_spent"`
 }
 
 type Period struct {
-	TaskID    uint      `gorm:"primary_key;autoIncrement:false" json:"task_id"`
-	UserID    uint      `gorm:"primary_key;autoIncrement:false" json:"user_id"`
+	ID        uint      `gorm:"primary_key" json:"id"`
+	TaskID    uint      `json:"task_id"`
+	UserID    uint      `json:"user_id"`
 	StartTime time.Time `json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
 }
