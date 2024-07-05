@@ -12,6 +12,7 @@ import (
 	"timeTracker/config"
 	"timeTracker/external"
 	"timeTracker/routes"
+	"timeTracker/swagger"
 )
 
 func main() {
@@ -29,6 +30,8 @@ func main() {
 	myApp.WaitGroup.Add(1)
 	go external.RunExternalApiEmulation(myApp)
 	myApp.WaitGroup.Wait()
+	
+	go swagger.RunSwagger()
 	
 	r := routes.InitRouter(myApp)
 	

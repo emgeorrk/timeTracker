@@ -3,12 +3,14 @@ definitions:
   gin.H:
     additionalProperties: {}
     type: object
-  handlers.PassportRequest:
+  handlers.overviewRequest:
     properties:
-      passportNumber:
+      end_time:
+        type: string
+      start_time:
         type: string
     type: object
-  handlers.overviewResult:
+  handlers.overviewResponse:
     properties:
       end_time:
         type: string
@@ -23,6 +25,31 @@ definitions:
               type: string
           type: object
         type: array
+    type: object
+  handlers.passportRequest:
+    properties:
+      passportNumber:
+        type: string
+    type: object
+  handlers.taskNameRequest:
+    properties:
+      task_name:
+        type: string
+    type: object
+  handlers.updateUserRequest:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+      passport_number:
+        type: string
+      passport_series:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
     type: object
   models.Period:
     properties:
@@ -45,7 +72,7 @@ definitions:
         type: boolean
       name:
         type: string
-      overall_time:
+      overall_time_spent:
         $ref: '#/definitions/time.Duration'
       periods:
         items:
@@ -97,6 +124,45 @@ paths:
   /users:
     get:
       description: Возвращает список всех пользователей
+      parameters:
+      - description: ID пользователя
+        in: query
+        name: id
+        type: string
+      - description: Серия паспорта пользователя
+        in: query
+        name: passport_series
+        type: string
+      - description: Номер паспорта пользователя
+        in: query
+        name: passport_number
+        type: string
+      - description: Фамилия пользователя
+        in: query
+        name: surname
+        type: string
+      - description: Имя пользователя
+        in: query
+        name: name
+        type: string
+      - description: Отчество пользователя
+        in: query
+        name: patronymic
+        type: string
+      - description: Адрес пользователя
+        in: query
+        name: address
+        type: string
+      - default: 10
+        description: Количество записей на странице
+        in: query
+        name: limit
+        type: integer
+      - default: 1
+        description: Номер страницы
+        in: query
+        name: page
+        type: integer
       produces:
       - application/json
       responses:
@@ -108,18 +174,24 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
       summary: GetUsers
+      tags:
+      - 1. Get
     post:
       consumes:
       - application/json
       description: Создает пользователя
       parameters:
-      - description: Номер паспорта
+      - description: Серия и номер паспорта
         in: body
         name: passportNumber
         required: true
         schema:
-          $ref: '#/definitions/handlers.PassportRequest'
+          $ref: '#/definitions/handlers.passportRequest'
       produces:
       - application/json
       responses:
@@ -136,11 +208,13 @@ paths:
           schema:
             $ref: '#/definitions/gin.H'
       summary: CreateUser
+      tags:
+      - 2. Post
   /users/{id}:
     delete:
       description: Удаляет пользователя и все связанные с ними записи
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: path
         name: id
         required: true
@@ -156,17 +230,53 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
       summary: DeleteUser
+      tags:
+      - 4. Delete
     put:
       consumes:
       - application/json
       description: Обновляет информацию о пользователе
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: path
         name: id
         required: true
         type: integer
+      - description: Серия паспорта
+        in: body
+        name: passport_series
+        schema:
+          $ref: '#/definitions/handlers.updateUserRequest'
+      - description: Номер паспорта
+        in: body
+        name: passport_number
+        schema:
+          $ref: '#/definitions/handlers.updateUserRequest'
+      - description: Фамилия
+        in: body
+        name: surname
+        schema:
+          $ref: '#/definitions/handlers.updateUserRequest'
+      - description: Имя
+        in: body
+        name: name
+        schema:
+          $ref: '#/definitions/handlers.updateUserRequest'
+      - description: Отчество
+        in: body
+        name: patronymic
+        schema:
+          $ref: '#/definitions/handlers.updateUserRequest'
+      - description: Адрес
+        in: body
+        name: address
+        schema:
+          $ref: '#/definitions/handlers.updateUserRequest'
       produces:
       - application/json
       responses:
@@ -182,12 +292,29 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
       summary: UpdateUser
+      tags:
+      - 3. Put
   /users/{id}/tasks:
     post:
       consumes:
       - application/json
       description: Создает задачу для пользователя
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Название задачи
+        in: body
+        name: name
+        schema:
+          $ref: '#/definitions/handlers.taskNameRequest'
       produces:
       - application/json
       responses:
@@ -197,6 +324,10 @@ paths:
             $ref: '#/definitions/models.Task'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/gin.H'
         "500":
@@ -204,12 +335,14 @@ paths:
           schema:
             $ref: '#/definitions/gin.H'
       summary: CreateTask
+      tags:
+      - 2. Post
   /users/{id}/tasks/{task_id}/start:
     post:
       description: Начинает отсчет для задачи пользователя, создает задачу, если ее
         не существует
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: path
         name: id
         required: true
@@ -234,17 +367,23 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
       summary: StartTaskTimer
+      tags:
+      - 2. Post
   /users/{id}/tasks/{task_id}/stop:
     post:
       description: Заканчивает отсчет для задачи пользователя
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: path
         name: id
         required: true
         type: integer
-      - description: Task ID
+      - description: ID задачи
         in: path
         name: task_id
         required: true
@@ -264,23 +403,35 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
       summary: StopTaskTimer
+      tags:
+      - 2. Post
   /users/{id}/tasks_overview:
     get:
       description: Возвращает трудозатраты по пользователю
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: path
         name: id
         required: true
         type: integer
+      - description: Период
+        in: body
+        name: period
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.overviewRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.overviewResult'
+            $ref: '#/definitions/handlers.overviewResponse'
         "400":
           description: Bad Request
           schema:
@@ -289,5 +440,11 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/gin.H'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
       summary: GetTasksOverview
+      tags:
+      - 1. Get
 swagger: "2.0"

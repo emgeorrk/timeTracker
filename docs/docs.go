@@ -21,7 +21,68 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "1. Get"
+                ],
                 "summary": "GetUsers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID пользователя",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Серия паспорта пользователя",
+                        "name": "passport_series",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Номер паспорта пользователя",
+                        "name": "passport_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Фамилия пользователя",
+                        "name": "surname",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Имя пользователя",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Отчество пользователя",
+                        "name": "patronymic",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Адрес пользователя",
+                        "name": "address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Количество записей на странице",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Номер страницы",
+                        "name": "page",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -31,6 +92,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
@@ -45,15 +112,18 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "2. Post"
+                ],
                 "summary": "CreateUser",
                 "parameters": [
                     {
-                        "description": "Номер паспорта",
+                        "description": "Серия и номер паспорта",
                         "name": "passportNumber",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.PassportRequest"
+                            "$ref": "#/definitions/handlers.passportRequest"
                         }
                     }
                 ],
@@ -88,14 +158,65 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "3. Put"
+                ],
                 "summary": "UpdateUser",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Серия паспорта",
+                        "name": "passport_series",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateUserRequest"
+                        }
+                    },
+                    {
+                        "description": "Номер паспорта",
+                        "name": "passport_number",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateUserRequest"
+                        }
+                    },
+                    {
+                        "description": "Фамилия",
+                        "name": "surname",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateUserRequest"
+                        }
+                    },
+                    {
+                        "description": "Имя",
+                        "name": "name",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateUserRequest"
+                        }
+                    },
+                    {
+                        "description": "Отчество",
+                        "name": "patronymic",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateUserRequest"
+                        }
+                    },
+                    {
+                        "description": "Адрес",
+                        "name": "address",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateUserRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -116,6 +237,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
                     }
                 }
             },
@@ -124,11 +251,14 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "4. Delete"
+                ],
                 "summary": "DeleteUser",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -146,6 +276,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
                     }
                 }
             }
@@ -159,7 +295,27 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "2. Post"
+                ],
                 "summary": "CreateTask",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Название задачи",
+                        "name": "name",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.taskNameRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -169,6 +325,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
@@ -188,11 +350,14 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "2. Post"
+                ],
                 "summary": "StartTaskTimer",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -220,6 +385,12 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
@@ -233,18 +404,21 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "2. Post"
+                ],
                 "summary": "StopTaskTimer",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "Task ID",
+                        "description": "ID задачи",
                         "name": "task_id",
                         "in": "path",
                         "required": true
@@ -268,6 +442,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
                     }
                 }
             }
@@ -278,21 +458,33 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "1. Get"
+                ],
                 "summary": "GetTasksOverview",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Период",
+                        "name": "period",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.overviewRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.overviewResult"
+                            "$ref": "#/definitions/handlers.overviewResponse"
                         }
                     },
                     "400": {
@@ -306,6 +498,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
                     }
                 }
             }
@@ -316,15 +514,18 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": {}
         },
-        "handlers.PassportRequest": {
+        "handlers.overviewRequest": {
             "type": "object",
             "properties": {
-                "passportNumber": {
+                "end_time": {
+                    "type": "string"
+                },
+                "start_time": {
                     "type": "string"
                 }
             }
         },
-        "handlers.overviewResult": {
+        "handlers.overviewResponse": {
             "type": "object",
             "properties": {
                 "end_time": {
@@ -346,6 +547,45 @@ const docTemplate = `{
                             }
                         }
                     }
+                }
+            }
+        },
+        "handlers.passportRequest": {
+            "type": "object",
+            "properties": {
+                "passportNumber": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.taskNameRequest": {
+            "type": "object",
+            "properties": {
+                "task_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.updateUserRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "passport_number": {
+                    "type": "string"
+                },
+                "passport_series": {
+                    "type": "string"
+                },
+                "patronymic": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
                 }
             }
         },
@@ -381,7 +621,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "overall_time": {
+                "overall_time_spent": {
                     "$ref": "#/definitions/time.Duration"
                 },
                 "periods": {

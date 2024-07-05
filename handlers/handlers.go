@@ -28,6 +28,8 @@ import (
 // @Param page query int false "Номер страницы" default(1)
 // @Success 200 {object} models.User
 // @Failure 400 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Tags 1. Get
 // @Router /users [get]
 func GetUsers(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
@@ -87,7 +89,12 @@ func GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"current_page": page, "total_pages": numPages/int64(limit) + 1, "result": users})
 }
 
-type overviewResult struct {
+type overviewRequest struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
+type overviewResponse struct {
 	Tasks []struct {
 		Task              models.Task `json:"task"`
 		TimeSpentInPeriod string      `json:"time_spent_in_period"`
@@ -100,9 +107,12 @@ type overviewResult struct {
 // @Description Возвращает трудозатраты по пользователю
 // @Produce json
 // @Param id path int true "ID пользователя"
-// @Success 200 {object} overviewResult
+// @Param period body overviewRequest true "Период"
+// @Success 200 {object} overviewResponse
 // @Failure 400 {object} gin.H
 // @Failure 404 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Tags 1. Get
 // @Router /users/{id}/tasks_overview [get]
 func GetTasksOverview(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
@@ -119,19 +129,23 @@ func GetTasksOverview(c *gin.Context) {
 		return
 	}
 	
-	startTimeStr := c.PostForm("start_time")
-	endTimeStr := c.PostForm("end_time")
-	if startTimeStr == "" || endTimeStr == "" {
+	var req overviewRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	if req.StartTime == "" || req.EndTime == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "start_time and end_time is required"})
 		return
 	}
 	
-	startTime, err := time.Parse(time.RFC822, startTimeStr)
+	startTime, err := time.Parse(time.RFC822, req.StartTime)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Time format must be RFC822, e.g. \"05 Jul 24 19:03 MSK\""})
 		return
 	}
-	endTime, err := time.Parse(time.RFC822, endTimeStr)
+	endTime, err := time.Parse(time.RFC822, req.EndTime)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Time format must be RFC822, e.g. \"05 Jul 24 19:03 MSK\""})
 		return
@@ -146,13 +160,13 @@ func GetTasksOverview(c *gin.Context) {
 	dbTasks := db.Model(&models.Task{}).Where("user_id = ?", user.ID)
 	dbTasks.Find(&tasks)
 	
-	result := overviewResult{
+	result := overviewResponse{
 		Tasks: make([]struct {
 			Task              models.Task `json:"task"`
 			TimeSpentInPeriod string      `json:"time_spent_in_period"`
 		}, len(tasks)),
-		StartTime: startTimeStr,
-		EndTime:   endTimeStr,
+		StartTime: req.StartTime,
+		EndTime:   req.EndTime,
 	}
 	
 	for idx, task := range tasks {
@@ -193,6 +207,8 @@ func GetTasksOverview(c *gin.Context) {
 // @Success 200 {object} models.Task
 // @Failure 400 {object} gin.H
 // @Failure 404 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Tags 2. Post
 // @Router /users/{id}/tasks/{task_id}/start [post]
 func StartTaskTimer(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
@@ -266,6 +282,8 @@ func StartTaskTimer(c *gin.Context) {
 // @Success 200 {object} models.Task
 // @Failure 400 {object} gin.H
 // @Failure 404 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Tags 2. Post
 // @Router /users/{id}/tasks/{task_id}/stop [post]
 func StopTaskTimer(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
@@ -336,6 +354,8 @@ func StopTaskTimer(c *gin.Context) {
 // @Param id path int true "ID пользователя"
 // @Success 200 {object} gin.H
 // @Failure 404 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Tags 4. Delete
 // @Router /users/{id} [delete]
 func DeleteUser(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
@@ -360,32 +380,86 @@ func DeleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted"})
 }
 
+type updateUserRequest struct {
+	PassportSeries string `json:"passport_series"`
+	PassportNumber string `json:"passport_number"`
+	Surname        string `json:"surname"`
+	Name           string `json:"name"`
+	Patronymic     string `json:"patronymic"`
+	Address        string `json:"address"`
+}
+
 // @Summary UpdateUser
 // @Description Обновляет информацию о пользователе
 // @Accept json
 // @Produce json
 // @Param id path int true "ID пользователя"
+// @Param passport_series body updateUserRequest false "Серия паспорта"
+// @Param passport_number body updateUserRequest false "Номер паспорта"
+// @Param surname body updateUserRequest false "Фамилия"
+// @Param name body updateUserRequest false "Имя"
+// @Param patronymic body updateUserRequest false "Отчество"
+// @Param address body updateUserRequest false "Адрес"
 // @Success 200 {object} models.User
 // @Failure 400 {object} gin.H
 // @Failure 404 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Tags 3. Put
 // @Router /users/{id} [put]
 func UpdateUser(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
 	
 	id := c.Param("id")
-	var user models.User
-	if err := db.Where("id = ?", id).First(&user).Error; err != nil {
+	
+	idInt, err := strconv.Atoi(id)
+	if err != nil || idInt < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID must be an non-negative integer"})
+		return
+	}
+	
+	var oldUser models.User
+	if err := db.Where("id = ?", id).First(&oldUser).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 	
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req updateUserRequest
+	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	
-	db.Save(&user)
-	c.JSON(http.StatusOK, user)
+	if req.PassportSeries == "" {
+		req.PassportSeries = oldUser.PassportSeries
+	}
+	if req.PassportNumber == "" {
+		req.PassportNumber = oldUser.PassportNumber
+	}
+	if req.Surname == "" {
+		req.Surname = oldUser.Surname
+	}
+	if req.Name == "" {
+		req.Name = oldUser.Name
+	}
+	if req.Patronymic == "" {
+		req.Patronymic = oldUser.Patronymic
+	}
+	if req.Address == "" {
+		req.Address = oldUser.Address
+	}
+	
+	newUser := models.User{
+		ID:             uint(idInt),
+		PassportSeries: req.PassportSeries,
+		PassportNumber: req.PassportNumber,
+		Surname:        req.Surname,
+		Name:           req.Name,
+		Patronymic:     req.Patronymic,
+		Address:        req.Address,
+	}
+	db.Save(&newUser)
+	
+	c.JSON(http.StatusOK, newUser)
 }
 
 type passportRequest struct {
@@ -396,10 +470,11 @@ type passportRequest struct {
 // @Description Создает пользователя
 // @Accept json
 // @Produce json
-// @Param passportNumber body passportRequest true "Номер паспорта"
+// @Param passportNumber body passportRequest true "Серия и номер паспорта"
 // @Success 200 {object} models.User
 // @Failure 400 {object} gin.H
 // @Failure 500 {object} gin.H
+// @Tags 2. Post
 // @Router /users [post]
 func CreateUser(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
@@ -495,10 +570,12 @@ type taskNameRequest struct {
 // @Accept json
 // @Produce json
 // @Param id path int true "ID пользователя"
-// @Param name body taskNameRequest true "Название задачи"
+// @Param name body taskNameRequest false "Название задачи"
 // @Success 200 {object} models.Task
 // @Failure 400 {object} gin.H
+// @Failure 404 {object} gin.H
 // @Failure 500 {object} gin.H
+// @Tags 2. Post
 // @Router /users/{id}/tasks [post]
 func CreateTask(c *gin.Context) {
 	db := c.MustGet("app").(*app.App).DB
